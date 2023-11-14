@@ -1,4 +1,4 @@
-#!/dfbin/bash
+#!/bin/bash
 ##############################################################################################################################
 ##                  Восстановление базы на конкретное время
 ###############################################################################################################################
@@ -92,13 +92,15 @@ restore_data() {
 
   if [ 0 == $(ls $DATA |wc -l) ]
     then
-      (tar -xvf /opt/bkpgsql/$DATEPB/base.tar -C $DATA);
+      (tar -xvf /opt/bkpgsql/$DATEPB/base.tar -C $DATA);                                                                             
 
   fi
-  chmod 750 -R $DATA
+
+  chmod 750 -R $DATA 
   chown postgres:postgres -R $DATA
 
 #Как вариант сделать цикл, который в случае если папка не пустае предложит из нее все удалить.
+#Когда будет доступно скачивание с нетворкера, нужно будет поменять либо путь, либо создать этот путь и настроить скачивание туда
 
 }
 
@@ -164,9 +166,23 @@ delete_recovery() {
 
 recovery_slave() {
 
-  su - a001-backup -c "ssh s001db-ln-pg2 'bash -s' < ./recovery"
-  su - a001-backup -c "ssh s001db-ln-pg3 'bash -s' < ./recovery"
- 
+  if [ $(hostname) == "s001db-ln-pg1" ]
+    then
+      su - a001-backup -c "ssh s001db-ln-pg2 'bash -s' < ./recovery 1";
+      su - a001-backup -c "ssh s001db-ln-pg3 'bash -s' < ./recovery 1";
+
+  elif [ $(hostname) == "s001db-ln-pg2" ]                                                                                                                                                 
+    then                                                                                                                                                                                
+      su - a001-backup -c "ssh s001db-ln-pg1 'bash -s' < ./recovery 2";                                                                                                                   
+      su - a001-backup -c "ssh s001db-ln-pg3 'bash -s' < ./recovery 2";
+  
+  elif [ $(hostname) == "s001db-ln-pg3" ]                                                                                                                                                 
+    then                                                                                                                                                                                
+      su - a001-backup -c "ssh s001db-ln-pg1 'bash -s' < ./recovery 3";                                                                                                                   
+      su - a001-backup -c "ssh s001db-ln-pg2 'bash -s' < ./recovery 3";
+  
+  fi
+
 }
 
 
@@ -195,4 +211,6 @@ else
   recovery_slave
   
 fi
+
+
 
