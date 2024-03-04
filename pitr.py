@@ -17,7 +17,7 @@ def postgres(cmd):
 
 
 def date():
-    """Функция получения даты и парса его для """
+    """Функция получения даты и парса его для бекапа постгреса"""
 
     while True:
 
@@ -28,36 +28,26 @@ def date():
         """тут мы получаем дату для архива фул бекапа"""
 
 
-        if int(targetF[0]) < 10:
+        if int(targetS[0]) < 10:
             targetF = str(0) + targetF
             """Если дата меньше 10, то при минусе 1 убирается 0, мы его возвращаем обратно"""
 
-        if int(targetF[0]) == 00:
-            targetF[0] = last_day[int(targetF[1])]
-            targetF[1] = str(0) + str((int(targetF[1]) - 1))
+        if targetS[0] == "01":
+
+            targetT = targetF.split("-")
+            targetT[0] = str(last_day[int(targetT[1]) - 1])
+            targetT[1] = str(0) + str(int(targetT[1]) - 1)
+            targetF = str(int(targetT[0]) - 1) + "-" + targetT[1] + "-" + targetT[2]
             """Если дату ввели 01-05-23, то на выходе она будет 00-05-23, этот иф меняет на последний день прошлого месяца и месяц соответственно"""
 
 
-        for i in str(os.system("ls /root")):
+        for i in str(os.system("ls .")):
             if i == targetF:
-                os.system("tar -xvf /opt/bkpgsql/" + targetS + "/base.tar")
+                os.system("tar -xvf /home/net/" + targetF + "/base.tar -C .")
                 break
             else:
-                print("Нет такого архива")
-                print(targetF)
-
-
-
-
-def t():
-    """Функция для получения и парса даты, под пгбейс, постгрес.конф и тд"""
-    if target == "conf":
-        print("Редачим конф")
-
-    elif target == "backup":
-        print("редачим под бекап")
-    else:
-        pass
+                print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
+                print("Нет бекапа на дату: " + targetF)
 
 
 date()
