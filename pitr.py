@@ -1,7 +1,7 @@
 import os
 
 
-last_day = {1: 31, 2: 28, 31: 3, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
+last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 DATA="/opt/pgsql/14/data"
 WAL="/opt/wal_archive"
 
@@ -37,17 +37,21 @@ def date():
             targetT = targetF.split("-")
             targetT[0] = str(last_day[int(targetT[1]) - 1])
             targetT[1] = str(0) + str(int(targetT[1]) - 1)
-            targetF = str(int(targetT[0]) - 1) + "-" + targetT[1] + "-" + targetT[2]
+            targetF = targetT[0] + "-" + targetT[1] + "-" + targetT[2]
             """Если дату ввели 01-05-23, то на выходе она будет 00-05-23, этот иф меняет на последний день прошлого месяца и месяц соответственно"""
 
 
-        for i in str(os.system("ls .")):
+        for i in os.listdir():
             if i == targetF:
-                os.system("tar -xvf /home/net/" + targetF + "/base.tar -C .")
+                return "tar -xvf /home/net/projects/python/LIMS/" + targetF + "/base.tar -C ."
                 break
-            else:
-                print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
-                print("Нет бекапа на дату: " + targetF)
+        else:
+            print("tar -xvf /home/net/projects/python/LIMS/" + targetF + "/base.tar -C .")
+            print("Нет бекапа на дату: " + targetF)
 
 
-date()
+def test():
+
+    os.system(date())
+
+test()
