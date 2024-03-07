@@ -1,6 +1,7 @@
 import os
 
 
+
 last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 DATA="/opt/pgsql/14/data"
 WAL="/opt/wal_archive"
@@ -43,15 +44,45 @@ def date():
 
         for i in os.listdir():
             if i == targetF:
-                return "tar -xvf /home/net/projects/python/LIMS/" + targetF + "/base.tar -C ."
+                return "tar -xvf /home/net/" + targetF + "/base.tar -C ."
                 break
         else:
-            print("tar -xvf /home/net/projects/python/LIMS/" + targetF + "/base.tar -C .")
+            print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
             print("Нет бекапа на дату: " + targetF)
+
+
+def get_right_time():
+
+    while True:
+
+        time = input("Введите час и минуту на который нужно восстановить базу(0-20:37): ")
+        timeS = time.split(":")
+
+        try:  
+            if 0 < int(timeS[0]) < 21:
+                pass    
+            else:
+                print("неправильные часы")
+                continue    
+
+
+            if 0 < int(timeS[1]) < 60:
+                pass      
+            else:
+                print("неправильно минуты")
+                continue
+            
+            return time
+        
+        except:
+            print("Непредвидмая ошибка")
+
+
 
 
 def test():
 
     os.system(date())
+    print(get_right_time())
 
 test()
