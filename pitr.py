@@ -17,7 +17,7 @@ def postgres(cmd):
         return os.system("systemctl list-units --state active | grep postgresql | wc -l")
 
 
-def date():
+def date_backup_pg():
     """Функция получения даты и парса его для бекапа постгреса"""
 
     while True:
@@ -44,11 +44,19 @@ def date():
 
         for i in os.listdir():
             if i == targetF:
-                return "tar -xvf /home/net/" + targetF + "/base.tar -C ."
+                return targetF  #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
                 break
         else:
             print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
             print("Нет бекапа на дату: " + targetF)
+
+
+
+def date_pg_conf():
+    """Дата для postgres.conf"""
+    
+    target = date_backup_pg()
+    
 
 
 def get_right_time():
@@ -82,7 +90,7 @@ def get_right_time():
 
 def test():
 
-    os.system(date())
+    print("tar -xvf /home/net/" + date_backup_pg() + "/base.tar -C .")
     print(get_right_time())
 
 test()
