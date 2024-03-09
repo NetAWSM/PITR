@@ -6,6 +6,7 @@ last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 3
 DATA="/opt/pgsql/14/data"
 WAL="/opt/wal_archive"
 
+
 def postgres(cmd):
     """Функция для команд демона пг"""
 
@@ -15,6 +16,9 @@ def postgres(cmd):
         return os.system("systemctl restart postgresql-14")
     elif cmd == "list":
         return os.system("systemctl list-units --state active | grep postgresql | wc -l")
+    
+def date():
+    
 
 
 def date_backup_pg():
@@ -56,6 +60,7 @@ def date_pg_conf():
     """Дата для postgres.conf"""
     
     target = date_backup_pg()
+
     
 
 
@@ -92,5 +97,6 @@ def test():
 
     print("tar -xvf /home/net/" + date_backup_pg() + "/base.tar -C .")
     print(get_right_time())
+    print(date_pg_conf())
 
 test()
