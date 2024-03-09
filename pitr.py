@@ -16,9 +16,6 @@ def postgres(cmd):
         return os.system("systemctl restart postgresql-14")
     elif cmd == "list":
         return os.system("systemctl list-units --state active | grep postgresql | wc -l")
-    
-def date():
-    
 
 
 def date_backup_pg():
@@ -31,37 +28,44 @@ def date_backup_pg():
 
         targetF = str(int(targetS[0]) - 1) + "-" + targetS[1] + "-" + targetS[2]
         """тут мы получаем дату для архива фул бекапа"""
+        
+        try:
+
+            if int(targetS[0]) < 10:
+                targetF = str(0) + targetF
+                """Если дата меньше 10, то при минусе 1 убирается 0, мы его возвращаем обратно"""
+
+            if targetS[0] == "01":
+
+                targetT = targetF.split("-")
+                targetT[0] = str(last_day[int(targetT[1]) - 1])
+                targetT[1] = str(0) + str(int(targetT[1]) - 1)
+                targetF = targetT[0] + "-" + targetT[1] + "-" + targetT[2]
+                """Если дату ввели 01-05-23, то на выходе она будет 00-05-23, этот иф меняет на последний день прошлого месяца и месяц соответственно"""
 
 
-        if int(targetS[0]) < 10:
-            targetF = str(0) + targetF
-            """Если дата меньше 10, то при минусе 1 убирается 0, мы его возвращаем обратно"""
+            for i in os.listdir():
+                if i == targetF:
+                    return targetF
+                
+            else:
+                print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
+                print("Нет бекапа на дату: " + targetF)
 
-        if targetS[0] == "01":
+        except:
 
-            targetT = targetF.split("-")
-            targetT[0] = str(last_day[int(targetT[1]) - 1])
-            targetT[1] = str(0) + str(int(targetT[1]) - 1)
-            targetF = targetT[0] + "-" + targetT[1] + "-" + targetT[2]
-            """Если дату ввели 01-05-23, то на выходе она будет 00-05-23, этот иф меняет на последний день прошлого месяца и месяц соответственно"""
-
-
-        for i in os.listdir():
-            if i == targetF:
-                return targetF  #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
-                break
-        else:
-            print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
-            print("Нет бекапа на дату: " + targetF)
+            print("Что то пошло не так")
 
 
-
-def date_pg_conf():
+def date_pg_conf(Date_Conf):
     """Дата для postgres.conf"""
     
-    target = date_backup_pg()
+    date = Date_Conf[6:] + Date_Conf[2:6] + Date_Conf[:2]
 
+    #date = dateR.replace(dateR[7], str(int(dateR[7]) + 1), -1)
+    dateR = date[:7] + str(int(date[7]) + 1)
     
+    return dateR
 
 
 def get_right_time():
@@ -91,12 +95,16 @@ def get_right_time():
             print("Непредвидмая ошибка")
 
 
-
-
 def test():
 
-    print("tar -xvf /home/net/" + date_backup_pg() + "/base.tar -C .")
-    print(get_right_time())
-    print(date_pg_conf())
+    date = date_backup_pg()
+
+    #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
+
+    print(date + " дата для бека")
+    print(date_pg_conf(date) + " дата для конфы")
+    
+
+    
 
 test()
