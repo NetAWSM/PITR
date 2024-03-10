@@ -61,8 +61,6 @@ def date_pg_conf(Date_Conf):
     """Дата для postgres.conf"""
     
     date = Date_Conf[6:] + Date_Conf[2:6] + Date_Conf[:2]
-
-    #date = dateR.replace(dateR[7], str(int(dateR[7]) + 1), -1)
     dateR = date[:7] + str(int(date[7]) + 1)
     
     return dateR
@@ -94,17 +92,45 @@ def get_right_time():
         except:
             print("Непредвидмая ошибка")
 
+def get_time_wal(get_time, get_date):
+    """Функция формирования времени для архива инкрементального бекапа"""
 
-def test():
+    time = get_time
+    date = get_date[6:] + get_date[2:6] + get_date[:2]
+    #timeS = time.split(":")
+    timeH = time[:2]
 
-    date = date_backup_pg()
+    if 0 < int(timeH) < 4:
+        return date + ":" + "04" + ":00.tar.gz"
+    elif 4 < int(timeH) < 8:
+        return date + ":" + "08" + ":00.tar.gz"
+    elif 8 < int(timeH) < 12:
+        return date + ":" + "12" + ":00.tar.gz"
+    elif 12 < int(timeH) < 16:
+        return date + ":" + "16" + ":00.tar.gz"
+    elif 16 < int(timeH) < 20:
+        return date + ":" + "20" + ":00.tar.gz"
+    else:
+        return date + ":" + "00" + ":00.tar.gz"
+    
+
+    
+
+
+def main():
+
+    date = date_backup_pg()  # Получаем дату для бекапа
+    time = get_right_time()  # Получаем время
+    wal_archive = get_time_wal(time, date_pg_conf(date))
+
 
     #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
 
     print(date + " дата для бека")
     print(date_pg_conf(date) + " дата для конфы")
-    
+    print(time + " время")
+    print(wal_archive)
 
     
 
-test()
+main()
