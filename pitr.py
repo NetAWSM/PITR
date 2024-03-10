@@ -123,13 +123,21 @@ def main():
     time = get_right_time()  # Получаем время
     wal_archive = get_time_wal(time, date_pg_conf(date))
 
+    postgres("stop")
+    
+
 
     #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
+
+
+
+
+#--------------Дебаг------------------
 
     print(date + " дата для бека")
     print(date_pg_conf(date) + " дата для конфы")
     print(time + " время")
-    print(wal_archive)
+    print(wal_archive + "Архив бекапа вал файлов")
 
     
 
