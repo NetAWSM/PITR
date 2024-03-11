@@ -70,11 +70,11 @@ def get_right_time():
 
     while True:
 
-        time = input("Введите час и минуту на который нужно восстановить базу(0-20:37): ")
+        time = input("Введите час и минуту на который нужно восстановить базу(20:37): ")
         timeS = time.split(":")
 
         try:  
-            if 0 < int(timeS[0]) < 21:
+            if 0 < int(timeS[0]) < 24:
                 pass    
             else:
                 print("неправильные часы")
@@ -123,7 +123,6 @@ def main():
     time = get_right_time()  # Получаем время
     wal_archive = get_time_wal(time, date_pg_conf(date))
 
-    postgres("stop")
     
 
 
