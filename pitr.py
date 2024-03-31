@@ -113,7 +113,7 @@ def get_time_wal(get_time, get_date):
     else:
         return date + ":" + "00" + ":00.tar.gz"
 
-def restore_data():
+def change_data():
     """Функция проверки очистки даты"""
     
     target = os.system("ls $DATA |wc -l")
@@ -126,7 +126,7 @@ def restore_data():
             count += 1
 
         elif count > 3:
-            print("ЧТо то пошло не так")
+            print("Что то пошло не так")
             break
         
         else:
@@ -145,7 +145,7 @@ def main():
     wal_archive = get_time_wal(time, date_pg_conf(date)) #Архив бекапа вал файлов
     postgres("stop")
     os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C $DATA")  #делаем бекап текущего каталога
-    restore_data() # удаляем каталог и создаем пустую папку data
+    change_data() # удаляем каталог и создаем пустую папку data
     
 
 
