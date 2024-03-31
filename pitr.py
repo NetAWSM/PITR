@@ -1,4 +1,4 @@
-import os
+import os, shutil
 
 
 
@@ -112,6 +112,27 @@ def get_time_wal(get_time, get_date):
         return date + ":" + "20" + ":00.tar.gz"
     else:
         return date + ":" + "00" + ":00.tar.gz"
+
+def restore_data():
+    """Функция проверки очистки даты"""
+    
+    target = os.system("ls $DATA |wc -l")
+    count = 0
+
+    while True:
+        if 0 != target:
+            shutil.rmtree("/opt/pgsql/14/data") #/
+            os.mkdir("/opt/pgsql/14/data") #/
+            count += 1
+
+        elif count > 3:
+            print("ЧТо то пошло не так")
+            break
+        
+        else:
+            break
+            
+        
     
 
     
@@ -121,9 +142,13 @@ def main():
 
     date = date_backup_pg()  # Получаем дату для бекапа
     time = get_right_time()  # Получаем время
-    wal_archive = get_time_wal(time, date_pg_conf(date))
-
+    wal_archive = get_time_wal(time, date_pg_conf(date)) #Архив бекапа вал файлов
+    postgres("stop")
+    os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C $DATA")  #делаем бекап текущего каталога
+    restore_data() # удаляем каталог и создаем пустую папку data
     
+
+
 
 
     #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
