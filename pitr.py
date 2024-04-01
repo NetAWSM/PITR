@@ -121,8 +121,8 @@ def change_data():
 
     while True:
         if 0 != target:
-            shutil.rmtree("/opt/pgsql/14/data") #/
-            os.mkdir("/opt/pgsql/14/data") #/
+            shutil.rmtree(DATA) #/
+            os.mkdir(DATA) #/
             count += 1
 
         elif count > 3:
@@ -131,21 +131,45 @@ def change_data():
         
         else:
             break
-            
-        
-    
 
+def create_wal(wal):
+    """Генерируем пул валов для восстановления на конкретную точку"""
+
+    ls = os.listdir("/opt/backup_wal/current/")
+    waltemp = wal.split(":")
     
+    for i in ls:
+        temp = i.split(":")
+        tempd = temp[0]
+        tempt = temp[1]
+        if tempd == waltemp[0] and tempt < waltemp[1]:
+            os.system("tar -xzvf /opt/backup_wal/current/" + i + " -C /opt/wal_archive")
+    
+    os.chmod("/opt/wal_archive/",  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    shutil.chown("/opt/wal_archive/", user='postgres', group='postgres')
+
+
+          
+        
 
 
 def main():
 
     date = date_backup_pg()  # Получаем дату для бекапа
     time = get_right_time()  # Получаем время
-    wal_archive = get_time_wal(time, date_pg_conf(date)) #Архив бекапа вал файлов
+    wal_archive = get_time_wal(time, date_pg_conf(date)) #Время для архива бекапа вал файлов
     postgres("stop")
-    os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C $DATA")  #делаем бекап текущего каталога
+    os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C" + DATA)  #делаем бекап текущего каталога
     change_data() # удаляем каталог и создаем пустую папку data
+    os.system("tar -xvf /opt/bkpgsql/" + date + "/base.tar -C $DATA") #Разархивируем папку с нужным бекапом и раздаем права и владельца
+    os.chmod(DATA,  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    shutil.chown(DATA, user='postgres', group='postgres')
+    shutil.rmtree("/opt/wal_archive/*")
+    create_wal() #Проверить!!!
+
+
+
+
     
 
 
