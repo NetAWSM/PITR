@@ -148,6 +148,11 @@ def create_wal(wal):
     os.chmod("/opt/wal_archive/",  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     shutil.chown("/opt/wal_archive/", user='postgres', group='postgres')
 
+def edit_config():
+    """Замена значений в postgres.conf"""
+    
+    #111
+
 
           
         
