@@ -135,7 +135,7 @@ def change_data():
 def create_wal(wal):
     """Генерируем пул валов для восстановления на конкретную точку"""
 
-    ls = os.listdir("/opt/backup_wal/current/")
+    ls = os.listdir("/opt/backup_wal/current/") #разобраться с папками!!!
     waltemp = wal.split(":")
     
     for i in ls:
@@ -151,7 +151,43 @@ def create_wal(wal):
 def edit_config():
     """Замена значений в postgres.conf"""
     
-    #111
+    date = "24-04-04"  # Получаем дату для бекапа
+    time = "14:23"  # Получаем время
+
+    datawal = '20' + date + ' ' + time +  ':00:00.000000+03'
+
+    with open('postgresql.conf', 'r') as f:
+
+        old = f.read()
+
+    restore = old.replace('#restore_command', 'restore_command')
+
+
+
+    with open('postgresql.conf', 'w') as f:
+
+        f.write(restore)
+
+    with open('postgresql.conf', 'r') as f:
+
+        old = f.read()
+
+    recovery = old.replace('#recovery_target_time', 'recovery_target_time')
+
+
+    with open('postgresql.conf', 'w') as f:
+
+        f.write(recovery)
+
+    with open('postgresql.conf', 'r') as f:
+
+        old = f.read()
+
+    tar = old.replace('targetdata', datawal)    
+
+    with open('postgresql.conf', 'w') as f:
+
+        f.write(tar)
 
 
           
