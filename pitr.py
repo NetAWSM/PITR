@@ -135,7 +135,7 @@ def change_data():
 def create_wal(wal):
     """Генерируем пул валов для восстановления на конкретную точку"""
 
-    ls = os.listdir("/opt/backup_wal/current/") #разобраться с папками!!!
+    ls = os.listdir("/opt/backup_wal")
     waltemp = wal.split(":")
     
     for i in ls:
@@ -143,16 +143,13 @@ def create_wal(wal):
         tempd = temp[0]
         tempt = temp[1]
         if tempd == waltemp[0] and tempt < waltemp[1]:
-            os.system("tar -xzvf /opt/backup_wal/current/" + i + " -C /opt/wal_archive")
+            os.system("tar -xzvf /opt/backup_wal" + i + " -C /opt/wal_archive")
     
     os.chmod("/opt/wal_archive/",  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     shutil.chown("/opt/wal_archive/", user='postgres', group='postgres')
 
-def edit_config():
+def edit_config(date, time):
     """Замена значений в postgres.conf"""
-    
-    date = "24-04-04"  # Получаем дату для бекапа
-    time = "14:23"  # Получаем время
 
     datawal = '20' + date + ' ' + time +  ':00:00.000000+03'
 
@@ -162,11 +159,11 @@ def edit_config():
 
     restore = old.replace('#restore_command', 'restore_command')
 
-
-
     with open('postgresql.conf', 'w') as f:
 
         f.write(restore)
+
+        #
 
     with open('postgresql.conf', 'r') as f:
 
@@ -174,21 +171,22 @@ def edit_config():
 
     recovery = old.replace('#recovery_target_time', 'recovery_target_time')
 
-
     with open('postgresql.conf', 'w') as f:
 
         f.write(recovery)
+
+        #
 
     with open('postgresql.conf', 'r') as f:
 
         old = f.read()
 
-    tar = old.replace('targetdata', datawal)    
+    tar = old.replace('targettime', datawal)    
 
     with open('postgresql.conf', 'w') as f:
 
         f.write(tar)
-
+ 
 
           
         
@@ -207,13 +205,8 @@ def main():
     shutil.chown(DATA, user='postgres', group='postgres')
     shutil.rmtree("/opt/wal_archive/*")
     create_wal() #Проверить!!!
-
-
-
-
-    
-
-
+    edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
+        
 
 
     #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
