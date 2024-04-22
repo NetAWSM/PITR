@@ -1,6 +1,5 @@
 import os, shutil
-
-
+from pathlib import Path
 
 last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 DATA="/opt/pgsql/14/data"
@@ -14,6 +13,8 @@ def postgres(cmd):
         return os.system("systemctl stop postgresql-14")
     elif cmd == "restart":
         return os.system("systemctl restart postgresql-14")
+    elif cmd == "start":
+        return os.system("systemctl start postgresql-14")
     elif cmd == "list":
         return os.system("systemctl list-units --state active | grep postgresql | wc -l")
 
@@ -186,12 +187,26 @@ def edit_config(date, time):
     with open('postgresql.conf', 'w') as f:
 
         f.write(tar)
- 
 
-          
+
+def recovery_salve():
+    """Восстановление слейвов"""
+    hostname = os.system("hostname")
+
+    if hostname == "s001db-ln-pg1":
+        os.system("su - a001-backup -c \"ssh s001db-ln-pg2 'bash -s' < ./recovery 1\"")
+        os.system("su - a001-backup -c \"ssh s001db-ln-pg3 'bash -s' < ./recovery 1\"")
+    elif hostname == "s001db-ln-pg2":
+        os.system("su - a001-backup -c \"ssh s001db-ln-pg1 'bash -s' < ./recovery 2\"")
+        os.system("su - a001-backup -c \"ssh s001db-ln-pg3 'bash -s' < ./recovery 2\"")
+    elif hostname == "s001db-ln-pg3":
+        os.system("su - a001-backup -c \"ssh s001db-ln-pg1 'bash -s' < ./recovery 3\"")
+        os.system("su - a001-backup -c \"ssh s001db-ln-pg2 'bash -s' < ./recovery 3\"")
+    
+
+
+
         
-
-
 def main():
 
     date = date_backup_pg()  # Получаем дату для бекапа
@@ -201,13 +216,19 @@ def main():
     os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C" + DATA)  #делаем бекап текущего каталога
     change_data() # удаляем каталог и создаем пустую папку data
     os.system("tar -xvf /opt/bkpgsql/" + date + "/base.tar -C $DATA") #Разархивируем папку с нужным бекапом и раздаем права и владельца
-    os.chmod(DATA,  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    shutil.chown(DATA, user='postgres', group='postgres')
     shutil.rmtree("/opt/wal_archive/*")
     create_wal() #Проверить!!!
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
-        
-
+    Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
+    os.system("chown postgres:postgres")
+    os.chmod(DATA,  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    os.chmod(DATA + "/recovery.signal",  640) #Права на рекавари сигнал
+    shutil.chown(DATA, user='postgres', group='postgres') #овнера всем
+    postgres("start") 
+    os.remove(DATA + "/recovery.signal")
+    shutil.copy("/opt/pgsql/14/data/postgresql.default.conf /opt/pgsql/14/data/postgresql.conf")
+    postgres("restart")
+    recovery_salve()
 
     #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
 
