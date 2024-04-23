@@ -138,6 +138,7 @@ def create_wal(wal):
 
     ls = os.listdir("/opt/backup_wal")
     waltemp = wal.split(":")
+    path = "/opt/wal_archive/"
     
     for i in ls:
         temp = i.split(":")
@@ -146,8 +147,10 @@ def create_wal(wal):
         if tempd == waltemp[0] and tempt < waltemp[1]:
             os.system("tar -xzvf /opt/backup_wal" + i + " -C /opt/wal_archive")
     
-    os.chmod("/opt/wal_archive/",  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    shutil.chown("/opt/wal_archive/", user='postgres', group='postgres')
+    for dirpath, dirname, filename in os.walk(path):
+        shutil.chown(filename, user='postgres', group='postgres')
+        os.chmod(filename,  750)
+       
 
 def edit_config(date, time):
     """Замена значений в postgres.conf"""
@@ -216,15 +219,21 @@ def main():
     os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C" + DATA)  #делаем бекап текущего каталога
     change_data() # удаляем каталог и создаем пустую папку data
     os.system("tar -xvf /opt/bkpgsql/" + date + "/base.tar -C $DATA") #Разархивируем папку с нужным бекапом и раздаем права и владельца
-    shutil.rmtree("/opt/wal_archive/*")
-    create_wal() #Проверить!!!
+    shutil.rmtree("/opt/wal_archive/*") # удаляем все из wal_archive
+    create_wal() #перекидываем валы из бекапа в wal_archive
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
-    os.system("chown postgres:postgres")
-    os.chmod(DATA,  750) #Надо сделать рекурсивно!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    os.chmod(DATA + "/recovery.signal",  640) #Права на рекавари сигнал
-    shutil.chown(DATA, user='postgres', group='postgres') #овнера всем
-    postgres("start") 
+
+    for dirpath, dirname, filename in os.walk(DATA): #Даем права на папку
+        for i in dirname:
+            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
+            os.chmod(os.path.join(dirpath, i), 0o750)
+        for i in filename:
+            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
+            os.chmod(os.path.join(dirpath, i), 0o750)
+
+    os.chmod(DATA + "/recovery.signal",  0o640) #Права на рекавари сигнал
+    postgres("start")
     os.remove(DATA + "/recovery.signal")
     shutil.copy("/opt/pgsql/14/data/postgresql.default.conf /opt/pgsql/14/data/postgresql.conf")
     postgres("restart")
