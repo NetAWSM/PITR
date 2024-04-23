@@ -218,9 +218,9 @@ def main():
     postgres("stop")
     os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C" + DATA)  #делаем бекап текущего каталога
     change_data() # удаляем каталог и создаем пустую папку data
-    os.system("tar -xvf /opt/bkpgsql/" + date + "/base.tar -C $DATA") #Разархивируем папку с нужным бекапом и раздаем права и владельца
+    os.system("tar -xvf /opt/bkpgsql/ " + date + "/base.tar -C $DATA") #Разархивируем папку с нужным бекапом и раздаем права и владельца
     shutil.rmtree("/opt/wal_archive/*") # удаляем все из wal_archive
-    create_wal() #перекидываем валы из бекапа в wal_archive
+    create_wal(wal_archive) #перекидываем валы из бекапа в wal_archive
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
 
@@ -237,19 +237,14 @@ def main():
     os.remove(DATA + "/recovery.signal")
     shutil.copy("/opt/pgsql/14/data/postgresql.default.conf /opt/pgsql/14/data/postgresql.conf")
     postgres("restart")
-    recovery_salve()
-
-    #os.system("tar -xvf /home/net/" + date + "/base.tar -C .") #!!!!!!!!!!!!!!!! Сюда вводим путь до папки с бекапами
-
-
-
+    #recovery_salve()
 
 #--------------Дебаг------------------
 
-    print(date + " дата для бека")
-    print(date_pg_conf(date) + " дата для конфы")
-    print(time + " время")
-    print(wal_archive + "Архив бекапа вал файлов")
+    # print(date + " дата для бека")
+    # print(date_pg_conf(date) + " дата для конфы")
+    # print(time + " время")
+    # print(wal_archive + "Архив бекапа вал файлов")
 
     
 
