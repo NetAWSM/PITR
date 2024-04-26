@@ -4,6 +4,7 @@ from pathlib import Path
 last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 DATA="/opt/pgsql/14/data"
 WAL="/opt/wal_archive"
+targz = "/var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz"
 
 
 def postgres(cmd):
@@ -216,10 +217,17 @@ def main():
     time = get_right_time()  # Получаем время
     wal_archive = get_time_wal(time, date_pg_conf(date)) #Время для архива бекапа вал файлов
     postgres("stop")
-    os.system("tar -czvf /var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz -C " + DATA)  #делаем бекап текущего каталога
-    change_data() # удаляем каталог и создаем пустую папку data
-    os.system("tar -xvf /opt/bkpgsql/ " + date + "/base.tar -C " + DATA) #Разархивируем папку с нужным бекапом и раздаем права и владельца
-    os.system("tar -xvf /opt/bkpgsql/ " + date + "/pg_wal.tar -C " + DATA + "/pg_wal") #Разархивируем папку с нужным бекапом и раздаем права и владельца
+
+    with tarfile.open(targz, "w") as tar:
+        tar.add(DATA)  #делаем бекап текущего каталога
+
+    change_data() # удаляем каталог и создаем пустую папку data, там же функция проверки удаления, нужно объединить с условием
+
+    with tarfile.open("/opt/bkpgsql/" + date + "/base.tar") as tar:
+        tar.extractall(path=DATA) #извлечение бекапа
+    with tarfile.open("/opt/bkpgsql/" + date + "/pg_wal.tar") as tar:
+        tar.extractall(path=DATA + "/pg_wal") #извлечение вал файлов
+
     shutil.rmtree("/opt/wal_archive/*") # удаляем все из wal_archive
     create_wal(wal_archive) #перекидываем валы из бекапа в wal_archive
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
