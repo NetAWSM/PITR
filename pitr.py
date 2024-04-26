@@ -5,6 +5,7 @@ last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 3
 DATA="/opt/pgsql/14/data"
 WAL="/opt/wal_archive"
 targz = "/var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz"
+bkpgsql = "/opt/bkpgsql/"
 
 
 def postgres(cmd):
@@ -223,12 +224,19 @@ def main():
 
     change_data() # удаляем каталог и создаем пустую папку data, там же функция проверки удаления, нужно объединить с условием
 
-    with tarfile.open("/opt/bkpgsql/" + date + "/base.tar") as tar:
+    with tarfile.open(bkpgsql + date + "/base.tar") as tar:
         tar.extractall(path=DATA) #извлечение бекапа
-    with tarfile.open("/opt/bkpgsql/" + date + "/pg_wal.tar") as tar:
+    with tarfile.open(bkpgsql + date + "/pg_wal.tar") as tar:
         tar.extractall(path=DATA + "/pg_wal") #извлечение вал файлов
 
     shutil.rmtree("/opt/wal_archive/*") # удаляем все из wal_archive
+    for dirpath, dirname, filename in os.walk(WAL): #Даем права на папку
+        for i in dirname:
+            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
+            os.chmod(os.path.join(dirpath, i), 0o750)
+
+
+
     create_wal(wal_archive) #перекидываем валы из бекапа в wal_archive
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
