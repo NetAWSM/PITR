@@ -234,9 +234,7 @@ def main():
         for i in dirname:
             shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
             os.chmod(os.path.join(dirpath, i), 0o750)
-
-
-
+    
     create_wal(wal_archive) #перекидываем валы из бекапа в wal_archive
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
