@@ -1,10 +1,11 @@
 import os, shutil, tarfile
 from pathlib import Path
+from datetime import date
 
 last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 DATA="/opt/pgsql/14/data"
-WAL="/opt/wal_archive"
-targz = "/var/backup/recovery_$(date +\%d-\%m-\%y:%H:%M).tar.gz"
+WAL="/opt/wal_archive/"
+targz = "/var/backup/recovery_" + date.today() + "tar.gz"
 bkpgsql = "/opt/bkpgsql/"
 
 
@@ -94,6 +95,14 @@ def get_right_time():
         
         except:
             print("Непредвидмая ошибка")
+
+def archive_data():
+
+
+    with tarfile.open(targz, "w") as tar:
+        tar.add(DATA)  #делаем бекап текущего каталога
+
+
 
 def get_time_wal(get_time, get_date):
     """Функция формирования времени для архива инкрементального бекапа"""
@@ -218,10 +227,7 @@ def main():
     time = get_right_time()  # Получаем время
     wal_archive = get_time_wal(time, date_pg_conf(date)) #Время для архива бекапа вал файлов
     postgres("stop")
-
-    with tarfile.open(targz, "w") as tar:
-        tar.add(DATA)  #делаем бекап текущего каталога
-
+    archive_data()
     change_data() # удаляем каталог и создаем пустую папку data, там же функция проверки удаления, нужно объединить с условием
 
     with tarfile.open(bkpgsql + date + "/base.tar") as tar:
@@ -229,17 +235,24 @@ def main():
     with tarfile.open(bkpgsql + date + "/pg_wal.tar") as tar:
         tar.extractall(path=DATA + "/pg_wal") #извлечение вал файлов
 
-    shutil.rmtree("/opt/wal_archive/*") # удаляем все из wal_archive
-    for dirpath, dirname, filename in os.walk(WAL): #Даем права на папку
-        for i in dirname:
+    for i in os.listdir(WAL):
+        os.remove(WAL + i) # удаляем все из wal_archive
+
+    create_wal(wal_archive) #перекидываем валы из бекапа в wal_archiv
+
+    shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres') #права на папку WAL
+    os.chmod(os.path.join(dirpath, i), 0o750) #права на папку WAL
+
+    for dirpath, dirname, filename in os.walk(WAL): #Даем права файлы в WAL !!!! по пробовать через os.listdir
+        for i in filename:
             shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
             os.chmod(os.path.join(dirpath, i), 0o750)
+       
     
-    create_wal(wal_archive) #перекидываем валы из бекапа в wal_archive
     edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
 
-    for dirpath, dirname, filename in os.walk(DATA): #Даем права на папку
+    for dirpath, dirname, filename in os.walk(DATA): #Даем права на папку   *****
         for i in dirname:
             shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
             os.chmod(os.path.join(dirpath, i), 0o750)
