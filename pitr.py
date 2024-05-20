@@ -231,7 +231,7 @@ def main():
     time = get_right_time()  # Получаем время
     wal_archive = get_time_wal(time, date_pg_conf(date)) #Время для архива бекапа вал файлов
     postgres("stop")
-    archive_data()
+    archive_data() #делаем бекап текущего каталога
     change_data() # удаляем каталог и создаем пустую папку data, там же функция проверки удаления, нужно объединить с условием
 
     with tarfile.open(bkpgsql + date + "/base.tar") as tar:
