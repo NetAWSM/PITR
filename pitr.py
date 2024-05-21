@@ -128,10 +128,10 @@ def get_time_wal(get_time, get_date):
 def change_data():
     """Функция проверки очистки даты"""
     
-    target = len(os.listdir(DATA))
     count = 0
 
     while True:
+        target = len(os.listdir(DATA))
         if 0 != target:
             shutil.rmtree(DATA) #/
             os.mkdir(DATA) #/
