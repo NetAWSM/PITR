@@ -128,7 +128,7 @@ def get_time_wal(get_time, get_date):
 def change_data():
     """Функция проверки очистки даты"""
     
-    target = os.system("ls $DATA |wc -l")
+    target = len(os.listdir(DATA))
     count = 0
 
     while True:
