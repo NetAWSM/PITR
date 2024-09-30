@@ -12,6 +12,12 @@ pg_basebackup -h 127.0.0.1 -p5432 -U replicator  -D /opt/bkpgsql/$(date +\%d-\%m
 
 }
 
+cp() {
+
+  \cp /opt/bkpgsl/$(date +\%d-\%m-\%y) /opt/nw -R
+
+}
+
 delete() {
 
   rm -rf $DIR/*
@@ -20,5 +26,6 @@ delete() {
 
 case $1 in
         backup) backup;;
+        cp) cp;;
         delete) delete;;
 esac
