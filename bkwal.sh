@@ -1,3 +1,5 @@
+#!/bin/bash
+
 TARGET=/opt/pgsql/14/data/pg_wal/
 BCUR=/opt/backup_wal
 BOLD=/opt/backup_wal/old
@@ -21,6 +23,7 @@ backup
 every() {
 
   tar -cvzf $BCUR/$EDATE.tar.gz $BCUR/*tar.gz --remove-files
+  \cp $BCUR/$EDATE.tar.gz /opt/nw
 
 }
 
