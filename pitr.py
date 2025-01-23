@@ -22,17 +22,21 @@ def postgres(cmd):
         return os.system("systemctl list-units --state active | grep postgresql | wc -l")
 
 
-def date_backup_pg():
+def date_backup_pg(time):
     """Функция получения даты и парса его для бекапа постгреса"""
 
     while True:
 
         target = input("Введите дату на которую восстанавливаются wal файлы (формат d-m-y пример: 12-09-23): ")
         targetS = target.split("-")
+        timeS = time.split(":")
 
-        targetF = str(int(targetS[0]) - 1) + "-" + targetS[1] + "-" + targetS[2]
-        """тут мы получаем дату для архива фул бекапа"""
-        
+        if int(timeS[0]) <= 21 and int(time[1]) <= 10:
+            targetF = str(int(targetS[0]) - 1) + "-" + targetS[1] + "-" + targetS[2]
+            """тут мы получаем дату для архива фул бекапа"""
+        else:
+            targetF = targetS[0] + "-" + targetS[1] + "-" + targetS[2]
+                
         try:
 
             if int(targetS[0]) < 10:
@@ -48,7 +52,7 @@ def date_backup_pg():
                 """Если дату ввели 01-05-23, то на выходе она будет 00-05-23, этот иф меняет на последний день прошлого месяца и месяц соответственно"""
 
 
-            for i in os.listdir():
+            for i in os.listdir("/opt/bkpgsql"):
                 if i == targetF:
                     return targetF
                 
@@ -59,13 +63,19 @@ def date_backup_pg():
         except:
 
             print("Что то пошло не так")
+            print(targetF)
 
 
-def date_pg_conf(Date_Conf):
+def date_pg_conf(time, Date_Conf):
     """Дата для postgres.conf"""
-    
+
     date = Date_Conf[6:] + Date_Conf[2:6] + Date_Conf[:2]
-    dateR = date[:7] + str(int(date[7]) + 1)
+    timeS = time.split(":")
+
+    if int(timeS[0]) <= 21 and int(time[1]) <= 10:
+        dateR = date[:7] + str(int(date[7]) + 1)
+    else:
+        dateR = date[:7] + date[7] 
     
     return dateR
 
@@ -170,39 +180,39 @@ def create_wal(wal):
 def edit_config(date, time):
     """Замена значений в postgres.conf"""
 
-    datawal = '20' + date + ' ' + time +  ':00:00.000000+03'
+    datawal = '20' + date + ' ' + time +  ':00.000000+03'
 
-    with open('postgresql.conf', 'r') as f:
+    with open(DATA + '/postgresql.conf', 'r') as f:
 
         old = f.read()
 
     restore = old.replace('#restore_command', 'restore_command')
 
-    with open('postgresql.conf', 'w') as f:
+    with open(DATA + '/postgresql.conf', 'w') as f:
 
         f.write(restore)
 
         #
 
-    with open('postgresql.conf', 'r') as f:
+    with open(DATA + '/postgresql.conf', 'r') as f:
 
         old = f.read()
 
     recovery = old.replace('#recovery_target_time', 'recovery_target_time')
 
-    with open('postgresql.conf', 'w') as f:
+    with open(DATA + '/postgresql.conf', 'w') as f:
 
         f.write(recovery)
 
         #
 
-    with open('postgresql.conf', 'r') as f:
+    with open(DATA + '/postgresql.conf', 'r') as f:
 
         old = f.read()
 
     tar = old.replace('targettime', datawal)    
 
-    with open('postgresql.conf', 'w') as f:
+    with open(DATA + '/postgresql.conf', 'w') as f:
 
         f.write(tar)
 
@@ -227,12 +237,13 @@ def recovery_salve():
         
 def main():
 
-    date = date_backup_pg()  # Получаем дату для бекапа
     time = get_right_time()  # Получаем время
-    wal_archive = get_time_wal(time, date_pg_conf(date)) #Время для архива бекапа вал файлов
+    date = date_backup_pg(time)  # Получаем дату для бекапа
+    wal_archive = get_time_wal(time, date_pg_conf(time, date)) #Время для архива бекапа вал файлов
     postgres("stop")
     archive_data() #делаем бекап текущего каталога +
     change_data() # удаляем каталог и создаем пустую папку data, там же функция проверки удаления, нужно объединить с условием +
+
 
     with tarfile.open(bkpgsql + date + "/base.tar") as tar:
         tar.extractall(path=DATA) #извлечение бекапа +
@@ -242,17 +253,17 @@ def main():
     for i in os.listdir(WAL):
         os.remove(WAL + i) # удаляем все из wal_archive
 
-    create_wal(wal_archive) #перекидываем валы из бекапа в wal_archiv
+    create_wal(wal_archive) #перекидываем валы из бекапа в wal_archiv (НЕ РАБОТАЕТ)
 
     shutil.chown(WAL, user='postgres', group='postgres') #права на папку WAL
     os.chmod(WAL, 0o750) #права на папку WAL
 
-    for dirpath, dirname, filename in os.walk(WAL): #Даем права файлы в WAL !!!! по пробовать через os.listdir
+    for dirpath, dirname, filename in os.walk(WAL): #Даем права wal файлам в wal_archive !!!! по пробовать через os.listdir
         for i in filename:
             shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
             os.chmod(os.path.join(dirpath, i), 0o750)
     
-    edit_config(date_pg_conf(date), time)  #Меняем postgres.conf под восстановление на точку времени
+    edit_config(date_pg_conf(time, date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
 
     for dirpath, dirname, filename in os.walk(DATA): #Даем права на папку   *****
