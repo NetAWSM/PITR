@@ -31,7 +31,7 @@ def date_backup_pg(time):
         targetS = target.split("-")
         timeS = time.split(":")
 
-        if int(timeS[0]) <= 21 and int(time[1]) <= 10:
+        if int(timeS[0]) <= 21 and int(timeS[1]) <= 10:
             targetF = str(int(targetS[0]) - 1) + "-" + targetS[1] + "-" + targetS[2]
             """тут мы получаем дату для архива фул бекапа"""
         else:
@@ -67,7 +67,7 @@ def date_backup_pg(time):
 
 
 def date_pg_conf(time, Date_Conf):
-    """Дата для postgres.conf"""
+    """Дата для postgres.conf переворчивает дату"""
 
     date = Date_Conf[6:] + Date_Conf[2:6] + Date_Conf[:2]
     timeS = time.split(":")
@@ -154,12 +154,18 @@ def change_data():
         else:
             break
 
-def create_wal(wal):
+def create_wal(time, wal):
     """Генерируем пул валов для восстановления на конкретную точку"""
 
     ls = os.listdir("/opt/backup_wal")
     waltemp = wal.split(":")
     path = "/opt/wal_archive/"
+    timeS = time.split(":")
+
+    if int(timeS[0]) == 21 and int(timeS[1]) > 10 or int(timeS[0]) > 21:
+        datewal = waltemp[0].split("-")
+        waltempT = str(int(datewal[0]) + 1) + "-" + datewal[1] + "-" + datewal[2] + ":" + waltemp[1] + ":" + waltemp[2]
+        waltemp = waltempT.split(":")
     
     for i in ls:
         try:  
@@ -168,13 +174,16 @@ def create_wal(wal):
             tempt = temp[1]
         except:
             continue
-        if tempd == waltemp[0] and tempt < waltemp[1]:
-            os.system("tar -xzvf /opt/backup_wal" + i + " -C /opt/wal_archive")
+        if tempd == waltemp[0] and int(tempt) <= int(waltemp[1]):
+            print("распаковка архива")
+            code_exit = os.system("tar -xzf /opt/backup_wal/" + i + " -C /opt/wal_archive")
+            print(code_exit)
+            
     
     for dirpath, dirname, filename in os.walk(path):
         for i in filename:
-            shutil.chown(i, user='postgres', group='postgres')
-            os.chmod(i,  750)
+            shutil.chown(dirpath + "/" + i, user='postgres', group='postgres')
+            os.chmod(dirpath + "/" + i,  750) # !!!!!!!!!!!!!!!! Выдает старнные права
        
 
 def edit_config(date, time):
@@ -236,7 +245,6 @@ def recovery_salve():
 
         
 def main():
-
     time = get_right_time()  # Получаем время
     date = date_backup_pg(time)  # Получаем дату для бекапа
     wal_archive = get_time_wal(time, date_pg_conf(time, date)) #Время для архива бекапа вал файлов
@@ -253,15 +261,15 @@ def main():
     for i in os.listdir(WAL):
         os.remove(WAL + i) # удаляем все из wal_archive
 
-    create_wal(wal_archive) #перекидываем валы из бекапа в wal_archiv (НЕ РАБОТАЕТ)
+    create_wal(time, wal_archive) #перекидываем валы из бекапа в wal_archiv (НЕ РАБОТАЕТ)
 
     shutil.chown(WAL, user='postgres', group='postgres') #права на папку WAL
     os.chmod(WAL, 0o750) #права на папку WAL
 
-    for dirpath, dirname, filename in os.walk(WAL): #Даем права wal файлам в wal_archive !!!! по пробовать через os.listdir
-        for i in filename:
-            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
-            os.chmod(os.path.join(dirpath, i), 0o750)
+#    for dirpath, dirname, filename in os.walk(WAL): #Даем права wal файлам в wal_archive !!!! по пробовать через os.listdir
+#        for i in filename:
+#            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
+#            os.chmod(os.path.join(dirpath, i), 0o750)
     
     edit_config(date_pg_conf(time, date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
