@@ -31,14 +31,14 @@ def date_backup_pg(time):
         targetS = target.split("-")
         timeS = time.split(":")
 
-        if int(timeS[0]) <= 21 and int(timeS[1]) <= 10:
-            targetF = str(int(targetS[0]) - 1) + "-" + targetS[1] + "-" + targetS[2]
-            """тут мы получаем дату для архива фул бекапа"""
-        else:
-            targetF = targetS[0] + "-" + targetS[1] + "-" + targetS[2]
-                
         try:
 
+            if int(timeS[0]) <= 21 and int(timeS[1]) <= 10:
+                targetF = str(int(targetS[0]) - 1) + "-" + targetS[1] + "-" + targetS[2]
+                """тут мы получаем дату для архива фул бекапа"""
+            else:
+                targetF = targetS[0] + "-" + targetS[1] + "-" + targetS[2]
+                
             if int(targetS[0]) < 10:
                 targetF = str(0) + targetF
                 """Если дата меньше 10, то при минусе 1 убирается 0, мы его возвращаем обратно"""
@@ -143,12 +143,30 @@ def change_data():
     while True:
         target = len(os.listdir(DATA))
         if 0 != target:
-            shutil.rmtree(DATA) #/
-            os.mkdir(DATA) #/
-            count += 1
+            code_rm_data = os.system("rm -rf " + DATA + "/*")
+            code_rm_data
+            if code_rm_data == 0:
+                print("DATA очищена")
+            count+=1
 
         elif count > 3:
-            print("Что то пошло не так")
+            print("Что то пошло не так с DATA")
+            break
+        
+        else:
+            break
+    
+    while True:
+        target_wal = len(os.listdir(WAL))
+        if 0 != target_wal:
+            code_rm_wal = os.system("rm -rf " + WAL + "*")
+            code_rm_wal
+            if code_rm_wal == 0:
+                print("WAL очищен")
+            count+=1
+
+        elif count > 3:
+            print("Что то пошло не так с wal_archive")
             break
         
         else:
@@ -176,14 +194,13 @@ def create_wal(time, wal):
             continue
         if tempd == waltemp[0] and int(tempt) <= int(waltemp[1]):
             print("распаковка архива")
-            code_exit = os.system("tar -xzf /opt/backup_wal/" + i + " -C /opt/wal_archive")
-            print(code_exit)
-            
-    
-    for dirpath, dirname, filename in os.walk(path):
+            code_exec_wal = os.system("tar -xzf /opt/backup_wal/" + i + " -C /opt/wal_archive")
+            code_exec_wal
+
+    for dirpath, dirname, filename in os.walk(WAL): #Даем права wal файлам в wal_archive !!!! по пробовать через os.listdir
         for i in filename:
-            shutil.chown(dirpath + "/" + i, user='postgres', group='postgres')
-            os.chmod(dirpath + "/" + i,  750) # !!!!!!!!!!!!!!!! Выдает старнные права
+            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
+            os.chmod(os.path.join(dirpath, i), 0o750)
        
 
 def edit_config(date, time):
@@ -250,30 +267,22 @@ def main():
     wal_archive = get_time_wal(time, date_pg_conf(time, date)) #Время для архива бекапа вал файлов
     postgres("stop")
     archive_data() #делаем бекап текущего каталога +
-    change_data() # удаляем каталог и создаем пустую папку data, там же функция проверки удаления, нужно объединить с условием +
-
+    change_data() # удаляем все в data и wal_archive, там же функция проверки удаления, нужно объединить с условием +
 
     with tarfile.open(bkpgsql + date + "/base.tar") as tar:
         tar.extractall(path=DATA) #извлечение бекапа +
     with tarfile.open(bkpgsql + date + "/pg_wal.tar") as tar:
         tar.extractall(path=DATA + "/pg_wal") #извлечение вал файлов +
 
-    for i in os.listdir(WAL):
-        os.remove(WAL + i) # удаляем все из wal_archive
-
     create_wal(time, wal_archive) #перекидываем валы из бекапа в wal_archiv (НЕ РАБОТАЕТ)
 
     shutil.chown(WAL, user='postgres', group='postgres') #права на папку WAL
     os.chmod(WAL, 0o750) #права на папку WAL
 
-#    for dirpath, dirname, filename in os.walk(WAL): #Даем права wal файлам в wal_archive !!!! по пробовать через os.listdir
-#        for i in filename:
-#            shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
-#            os.chmod(os.path.join(dirpath, i), 0o750)
-    
     edit_config(date_pg_conf(time, date), time)  #Меняем postgres.conf под восстановление на точку времени
     Path(DATA + "/recovery.signal").touch() #создаем фаил восстановления
-
+    shutil.chown(DATA, user='postgres', group='postgres') #права на папку DATA
+    os.chmod(DATA, 0o750) #права на папку DATA
     for dirpath, dirname, filename in os.walk(DATA): #Даем права на папку   *****
         for i in dirname:
             shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
