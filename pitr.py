@@ -38,7 +38,7 @@ def date_backup_pg(time):
                 """тут мы получаем дату для архива фул бекапа"""
             else:
                 targetF = targetS[0] + "-" + targetS[1] + "-" + targetS[2]
-                
+
             if int(targetS[0]) < 10:
                 targetF = str(0) + targetF
                 """Если дата меньше 10, то при минусе 1 убирается 0, мы его возвращаем обратно"""
@@ -55,7 +55,7 @@ def date_backup_pg(time):
             for i in os.listdir("/opt/bkpgsql"):
                 if i == targetF:
                     return targetF
-                
+
             else:
                 print("tar -xvf /home/net/" + targetF + "/base.tar -C .")
                 print("Нет бекапа на дату: " + targetF)
@@ -75,8 +75,8 @@ def date_pg_conf(time, Date_Conf):
     if int(timeS[0]) <= 21 and int(time[1]) <= 10:
         dateR = date[:7] + str(int(date[7]) + 1)
     else:
-        dateR = date[:7] + date[7] 
-    
+        dateR = date[:7] + date[7]
+
     return dateR
 
 
@@ -87,22 +87,22 @@ def get_right_time():
         time = input("Введите час и минуту на который нужно восстановить базу(20:37): ")
         timeS = time.split(":")
 
-        try:  
-            if 0 < int(timeS[0]) < 24:
-                pass    
+        try:
+            if 0 <= int(timeS[0]) < 24:
+                pass
             else:
                 print("неправильные часы")
-                continue    
+                continue
 
 
-            if 0 < int(timeS[1]) < 60:
-                pass      
+            if 0 <= int(timeS[1]) < 60:
+                pass
             else:
                 print("неправильно минуты")
                 continue
-            
+
             return time
-        
+
         except:
             print("Непредвидмая ошибка")
 
@@ -137,7 +137,7 @@ def get_time_wal(get_time, get_date):
 
 def change_data():
     """Функция проверки очистки даты"""
-    
+
     count = 0
 
     while True:
@@ -152,10 +152,10 @@ def change_data():
         elif count > 3:
             print("Что то пошло не так с DATA")
             break
-        
+
         else:
             break
-    
+
     while True:
         target_wal = len(os.listdir(WAL))
         if 0 != target_wal:
@@ -168,7 +168,7 @@ def change_data():
         elif count > 3:
             print("Что то пошло не так с wal_archive")
             break
-        
+
         else:
             break
 
@@ -184,9 +184,9 @@ def create_wal(time, wal):
         datewal = waltemp[0].split("-")
         waltempT = str(int(datewal[0]) + 1) + "-" + datewal[1] + "-" + datewal[2] + ":" + waltemp[1] + ":" + waltemp[2]
         waltemp = waltempT.split(":")
-    
+
     for i in ls:
-        try:  
+        try:
             temp = i.split(":")
             tempd = temp[0]
             tempt = temp[1]
@@ -197,11 +197,12 @@ def create_wal(time, wal):
             code_exec_wal = os.system("tar -xzf /opt/backup_wal/" + i + " -C /opt/wal_archive")
             code_exec_wal
 
+
     for dirpath, dirname, filename in os.walk(WAL): #Даем права wal файлам в wal_archive !!!! по пробовать через os.listdir
         for i in filename:
             shutil.chown(os.path.join(dirpath, i), user='postgres', group='postgres')
             os.chmod(os.path.join(dirpath, i), 0o750)
-       
+
 
 def edit_config(date, time):
     """Замена значений в postgres.conf"""
@@ -236,7 +237,7 @@ def edit_config(date, time):
 
         old = f.read()
 
-    tar = old.replace('targettime', datawal)    
+    tar = old.replace('targettime', datawal)
 
     with open(DATA + '/postgresql.conf', 'w') as f:
 
@@ -256,11 +257,11 @@ def recovery_salve():
     elif hostname == "s001db-ln-pg3":
         os.system("su - a001-backup -c \"ssh s001db-ln-pg1 'bash -s' < ./recovery 3\"")
         os.system("su - a001-backup -c \"ssh s001db-ln-pg2 'bash -s' < ./recovery 3\"")
-    
 
 
 
-        
+
+
 def main():
     time = get_right_time()  # Получаем время
     date = date_backup_pg(time)  # Получаем дату для бекапа
@@ -297,14 +298,5 @@ def main():
     shutil.copy("/opt/pgsql/14/data/postgresql.default.conf", "/opt/pgsql/14/data/postgresql.conf")
     postgres("restart")
     #recovery_salve()
-
-#--------------Дебаг------------------
-
-    # print(date + " дата для бека")
-    # print(date_pg_conf(date) + " дата для конфы")
-    # print(time + " время")
-    # print(wal_archive + "Архив бекапа вал файлов")
-
-    
 
 main()
